@@ -110,6 +110,31 @@ final class FinanceServiceTests: XCTestCase {
             XCTAssertNil(contactList)
         }
     }
+    
+    func test_FetchUserProfile_URLValidation() throws {
+        //given
+        var callOrder = [String]()
+        let (sut, fields) = try makeSut(customUrl: "https://raw.githubusercontent.com/devpass-tech/challenge-finance-app/main/api/user_profile_endpoint.json")
+        fields.networkClient.performRequestImpl = { url, _ in
+            callOrder.append("performRequest called \(url)")
+        }
+        
+        // when
+        sut.fetchUserProfile { _ in
+            callOrder.append("fetchContactList não deveria ser chamado")
+        }
+        
+        // then
+        XCTAssertEqual(callOrder, ["performRequest called \(fields.urlExpected)"])
+    }
+    
+    func test_FetchUserProfile_WithSucess() throws {
+        try fetchUserProfile(whenApiReturns: userProfileJsonData, shouldValidateUsing: { userProfile in
+            XCTAssertEqual(userProfile, .fixture())
+        })
+    }
+    
+    
 }
 
 private extension FinanceServiceTests {
@@ -186,6 +211,32 @@ private extension FinanceServiceTests {
         ])
     }
     
+    func fetchUserProfile(
+        whenApiReturns data: Data?,
+        shouldValidateUsing validation: @escaping (UserProfile?) -> Void
+    ) throws {
+        // given
+        var callOrder = [String]()
+        let (sut, fields) = try makeSut()
+        fields.networkClient.performRequestImpl = { _, completion in
+            callOrder.append("performRequest called")
+            completion(data)
+        }
+        
+        // when
+        sut.fetchUserProfile { userProfile in
+            callOrder.append("fetchUserProfile called")
+            validation(userProfile)
+        }
+        
+        // then
+        XCTAssertEqual(callOrder, [
+            "performRequest called",
+            "fetchUserProfile called"
+        ])
+    }
+    
+    
     func makeSut(
         customUrl: String = "https://raw.githubusercontent.com/devpass-tech/challenge-finance-app/main/api/home_endpoint.json"
     ) throws -> (sut: Sut, (networkClient: NetworkClientMock, urlExpected: URL)) {
@@ -255,5 +306,33 @@ extension Contact {
             name: name,
             phone: phone
         )
+    }
+}
+
+extension UserProfile {
+    static func fixture(
+        name: String = "Ronald Robertson",
+        phone: String = "11-99999-8888",
+        email: String = "ronald@gmail.com",
+        address: String = "Alameda Amazona 888 - Barueri-SP",
+        account: Account = .fixture()
+    ) -> UserProfile {
+        .init(name: name,
+              phone: phone,
+              email: email,
+              address: address,
+              account: account
+        )
+    }
+}
+
+extension Account {
+    static func fixture(
+        agency: String = "0089",
+        account: String = "898989-9"
+    ) -> Account {
+        .init(
+            agency: agency,
+            account: account)
     }
 }
