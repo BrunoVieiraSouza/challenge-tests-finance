@@ -134,6 +134,17 @@ final class FinanceServiceTests: XCTestCase {
         })
     }
     
+    func test_FetchUserProfile_WithInvalidData() throws {
+        try fetchUserProfile(whenApiReturns: Data(), shouldValidateUsing: { userProfile in
+            XCTAssertNil(userProfile)
+        })
+    }
+    
+    func test_FetchUserProfile_WithNullableData() throws {
+        try fetchUserProfile(whenApiReturns: nil) { userProfile in
+            XCTAssertNil(userProfile)
+        }
+    }
     
 }
 
